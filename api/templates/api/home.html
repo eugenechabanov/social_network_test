@@ -1,0 +1,22 @@
+{% extends "api/base.html" %}
+{% load static %}
+
+{% block content %}
+    <h3 class="alert-info">Feed</h3>
+    {% for post in posts %}
+        <article class="media content-section">
+            <img class="article-img" src="{{ post.image }}">
+            <div class="media-body">
+                <div class="article-metadata">
+                    <b><a class="article-title" href="{% url 'post-detail' post.id %}">Post id: {{ post.id }}</a></b>
+                    <small class="text-muted" style="padding-left: 25px">Date posted: {{ post.date_posted|date:"F d, Y" }}</small>
+                </div>
+
+                <p class="article-content">{{ post.content }}</p>
+                <img src="{% static 'images/thumb-up.svg' %}" style="width: 20px" alt="Likes:">
+                {{ post.number_of_likes }}
+                <small style="padding-left: 30px">Author: <a class="mr-2" href="#">{{ post.author }}</a></small>
+            </div>
+        </article>
+    {% endfor %}
+{% endblock content %}

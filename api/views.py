@@ -1,45 +1,148 @@
+from django.http import HttpResponse
+from .serializers import PostSerializer, UserSerializer
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from rest_framework import generics
 from django.shortcuts import render
-from django.http import HttpResponse, JsonResponse
-from rest_framework.parsers import JSONParser
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse
 from .models import Post
-from .serializers import PostSerializer
-from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.models import User
+from rest_framework.permissions import IsAuthenticated, AllowAny
 
 
-@csrf_exempt
-def post_list(request):
-    if request.method == 'GET':
+class UserCreate(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (AllowAny,)
+
+
+class ListAllAPIView(APIView):
+    def get(self, request):
+        """Listing all posts"""
         posts = Post.objects.all()
         serializer = PostSerializer(posts, many=True)
-        return JsonResponse(serializer.data, safe=False)
-    elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = PostSerializer(data=data)
+        return Response(serializer.data)
 
+
+class CreatePostAPIView(APIView):
+    def post(self, request):
+        """Creating new post"""
+        # print(request.data)
+        # print(User.objects.all())
+        # # request.data['author'] = 3  # author name
+        # data = request.data
+        # s = User.objects.get(username=request.data['author'])
+        # data['author_id'] = s.id
+        # print(data)
+        # author = self.get_queryset().latest('publication_date')
+
+        serializer = PostSerializer(data=request.data)
+        # print(serializer)
         if serializer.is_valid():
             serializer.save()
-            return JsonResponse(serializer.data, status=201)
-        return JsonResponse(serializer.errors, status=400)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@csrf_exempt
-def post_detail(request, pk):
+def get_object(id):
     try:
-        post = Post.objects.get(pk=pk)
+        return Post.objects.get(id=id)
     except Post.DoesNotExist:
-        return HttpResponse(status=404)
+        return HttpResponse(status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'GET':
-        serializer = PostSerializer(post)
-        return JsonResponse(serializer.data)
-    elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = PostSerializer(post, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return JsonResponse(serializer.data)
-        return JsonResponse(serializer.errors, status=400)
 
-    if request.method == 'DELETE':
+def like_or_dislike(id, i):
+    """Edit post by id"""
+    post = get_object(id)
+    post.number_of_likes += i       # i is either +1 or -1
+    if post.number_of_likes < 0:    # just in case so we don't slide off the set of natural numbers
+        post.number_of_likes = 0
+    post.save()
+    serializer = PostSerializer(post)
+    serialized_data = serializer.data
+    serializer = PostSerializer(post, data=serialized_data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LikePostAPIView(APIView):
+    def put(self, request, id):
+        return like_or_dislike(id, 1)
+
+
+class UnlikePostAPIView(APIView):
+    def put(self, request, id):
+        return  like_or_dislike(id, -1)
+
+
+class DeletePostAPIView(APIView):
+    def delete(self, request, id):
+        """Delete post by id"""
+        post = get_object(id)
         post.delete()
-        return HttpResponse(status=204)
+        return HttpResponse(status=status.HTTP_204_NO_CONTENT)
+
+
+def home(request):
+    context = {
+        'posts': Post.objects.all()
+    }
+    return render(request, 'api/home.html', context)
+
+
+class PostListView(ListView):
+    model = Post
+    template_name = 'api/home.html'  # <app>/<model>_<viewtype>.html
+    context_object_name = 'posts'
+    ordering = ['-date_posted']
+
+
+class PostDetailView(DetailView):
+    model = Post
+
+
+class PostCreateView(LoginRequiredMixin, CreateView):
+    model = Post
+    fields = ['content']
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('home')
+
+
+class PostUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = Post
+    fields = ['content']
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        return super().form_valid(form)
+
+    def test_func(self):
+        post = self.get_object()
+        if self.request.user == post.author:
+            return True
+        return False
+
+
+class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = Post
+    success_url = '/'
+
+    def test_func(self):
+        post = self.get_object()
+        if self.request.user == post.author:
+            return True
+        return False
+
+
+# def about(request):
+#     return render(request, 'api/about.html', {'title': 'About'})
