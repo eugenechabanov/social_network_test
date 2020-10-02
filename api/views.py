@@ -1,16 +1,24 @@
 from django.http import HttpResponse
-from .serializers import PostSerializer, UserSerializer
+from .serializers import PostSerializer, UserSerializer, LikeSerializer, LikeAggrSerializer, UserStatsSerializer, LogEntrySerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework import generics
-from django.shortcuts import render
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse
-from .models import Post
+from django.shortcuts import get_object_or_404
+from .models import Post, Like, Profile
 from django.contrib.auth.models import User
 from rest_framework.permissions import IsAuthenticated, AllowAny
+import random
+import datetime
+from django.db.models import Count
+from django.contrib.admin.models import LogEntry
+from django.db.models import Max
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt import serializers
+from api.serializers import CustomTokenObtainPairSerializer
 
 
 class UserCreate(generics.CreateAPIView):
@@ -30,37 +38,29 @@ class ListAllAPIView(APIView):
 class CreatePostAPIView(APIView):
     def post(self, request):
         """Creating new post"""
-        # print(request.data)
-        # print(User.objects.all())
-        # # request.data['author'] = 3  # author name
-        # data = request.data
-        # s = User.objects.get(username=request.data['author'])
-        # data['author_id'] = s.id
-        # print(data)
-        # author = self.get_queryset().latest('publication_date')
-
         serializer = PostSerializer(data=request.data)
-        # print(serializer)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-def get_object(id):
+class CustomTokenObtainPairView(TokenObtainPairView):
+    """
+    Takes a set of user credentials and returns an access and refresh JSON web
+    token pair to prove the authentication of those credentials.
+    """
+    serializer_class = CustomTokenObtainPairSerializer
+
+
+def get_object(id, model):
     try:
-        return Post.objects.get(id=id)
-    except Post.DoesNotExist:
+        return model.objects.get(id=id)
+    except model.DoesNotExist:
         return HttpResponse(status=status.HTTP_404_NOT_FOUND)
 
 
-def like_or_dislike(id, i):
-    """Edit post by id"""
-    post = get_object(id)
-    post.number_of_likes += i       # i is either +1 or -1
-    if post.number_of_likes < 0:    # just in case so we don't slide off the set of natural numbers
-        post.number_of_likes = 0
-    post.save()
+def serialize(post):
     serializer = PostSerializer(post)
     serialized_data = serializer.data
     serializer = PostSerializer(post, data=serialized_data)
@@ -71,35 +71,171 @@ def like_or_dislike(id, i):
 
 
 class LikePostAPIView(APIView):
-    def put(self, request, id):
-        return like_or_dislike(id, 1)
+    def post(self, request, post_id):
+        if int(post_id) == 0:                   # selecting a random post to like if post_id = 0 was passed (for bot)
+            posts = Post.objects.all()
+            random_item = random.choice(posts)  # randomly chooses item
+            post_id = random_item.id
+
+        path = request.get_full_path()  # /api/like/<int:id>
+        if '/like' in path:
+            like_value = +1
+        elif '/unlike' in path:
+            like_value = -1
+
+        # Making +1 or -1 in Post model's number_of likes
+        post_obj = get_object(post_id, Post)
+        post_obj.number_of_likes += like_value
+        if post_obj.number_of_likes < 0:        # if we unlike the 0-liked posted, let's stay with 0, not -1
+            post_obj.number_of_likes = 0
+        post_obj.save()
+
+        # Creating a like instance with timestamp + user and post references
+        like = Like()
+        user = User.objects.get(username=request.data['author'])   # get_object(request.data['author'], User)
+        like.user = user
+        like.post = post_obj
+        like.value = like_value
+        like.save()
+
+        like_unlike = 'like' if like_value > 0 else 'unlike'
+        print('Post with id = {} {}d by user: {}.'.format(post_id, like_unlike, user))
+        return serialize(post_obj)
 
 
 class UnlikePostAPIView(APIView):
-    def put(self, request, id):
-        return  like_or_dislike(id, -1)
+    def unlike(self, request, postid):
+        print('unlike')
 
 
 class DeletePostAPIView(APIView):
     def delete(self, request, id):
         """Delete post by id"""
-        post = get_object(id)
+        post = get_object(id, Post)
         post.delete()
         return HttpResponse(status=status.HTTP_204_NO_CONTENT)
 
 
-def home(request):
-    context = {
-        'posts': Post.objects.all()
-    }
-    return render(request, 'api/home.html', context)
+def get_dates_from_request(request):
+    if 'date_from' in request.GET:
+        date_from = request.GET['date_from']
+    else:
+        date_from = '2004-02-04'  # facebook launch date
+        # (we cannot launch our social network before Facebook, can we?)
+    if 'date_to' in request.GET:
+        date_to = request.GET['date_to']
+    else:
+        date_to = datetime.datetime.today()
+
+    error = ''
+    try:  # checking if dates are correct and if date_from > date to
+        if not isinstance(date_from, datetime.datetime):
+            date1 = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+        else:
+            date1 = date_from
+
+        if not isinstance(date_to, datetime.datetime):
+            date2 = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+        else:
+            date2 = date_to
+        if date1 > date2:
+            error = Response('Incorrect dates provided: date_from > date_to')
+    except ValueError:
+        error = Response('Incorrect dates provided.')
+
+    return date_from, date_to, error
+
+
+class LikesFilteredByDateAPIView(APIView):
+    model = Like
+
+    def get(self, request):
+        date_from, date_to, error = get_dates_from_request(request)
+        if error != '':
+            return error
+
+        likes = Like.objects.filter(date__gte=date_from, date__lte=date_to)
+        serializer = LikeSerializer(likes, many=True)
+        return Response(serializer.data)
+
+
+class LikesAggregatedByDaysAPIView(APIView):
+    model = Like
+
+    def get(self, request):
+        date_from, date_to, error = get_dates_from_request(request)
+        if error != '':
+            return error
+        # likes = Like.objects.filter(date__gte=date_from, date__lte=date_to)
+        # total_count = likes.count()
+        likes = Like.objects.extra(select={'day': 'date( date )'}).values('day') \
+            .annotate(liked_posts=Count('date'))
+
+        serializer = LikeAggrSerializer(likes, many=True)
+        return Response(serializer.data)
+
+
+class FilterPostsByDateAPIView(APIView):
+    model = Post
+
+    def get(self, request):
+        date_from, date_to, error = get_dates_from_request(request)
+        if error != '':
+            return error
+
+        posts = Post.objects.filter(date_posted__gte=date_from, date_posted__lte=date_to)
+
+        serializer = PostSerializer(posts, many=True)
+        return Response(serializer.data)
+    # context_object_name = 'posts'
+
+
+class UserStatsAPIView(APIView):
+    # model = Profile
+    model = User
+
+    def get(self, request):
+        users = User.objects.all()
+        serializer = UserStatsSerializer(users, many=True)
+        return Response(serializer.data)
+
+
+
+
+
+        # getting ids of all existing users:
+        all_user_ids_list = [item['id'] for item in list(User.objects.values('id'))]
+
+        # serializer = UserStatsSerializer(users, many=True)
+
+        # Generates a "SELECT MAX..." query
+
+        user_last = LogEntry.objects.latest('action_time')  # {'rating__max': 5}
+        user_last = LogEntry.objects.aggregate(Max('action_time'))  # {'rating__max': 5}
+        # user_last = LogEntry.objects.filter(action_time=)
+        # user_last = LogEntry.objects.values('user').annotate(dcount=Count('action_time'))
+        # user_last = LogEntry.objects.all().order_by('user', 'action_time').distinct('user')
+        # user_last = LogEntry.objects.filter().values_list('user', flat=True).distinct()
+        # user_last = LogEntry.objects.values('user_id').annotate(latest_date=Max('action_time'))
+        # print(user_last)
+        user_last = LogEntry.objects.raw("""    
+            SELECT id, user_id, MAX(action_time) AS max_items
+            FROM django_admin_log
+            GROUP BY user_id;
+        """)
+
+        # print(user_last)
+        # LogEntry.objects.filter(action_time=)
+        serializer = CustomTokenObtainPairSerializer(user_last, many=True)
+
+        return Response(serializer.data)
 
 
 class PostListView(ListView):
     model = Post
-    template_name = 'api/home.html'  # <app>/<model>_<viewtype>.html
+    template_name = 'api/home.html'
     context_object_name = 'posts'
-    ordering = ['-date_posted']
+    ordering = ['-id']
 
 
 class PostDetailView(DetailView):
@@ -142,7 +278,3 @@ class PostDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         if self.request.user == post.author:
             return True
         return False
-
-
-# def about(request):
-#     return render(request, 'api/about.html', {'title': 'About'})

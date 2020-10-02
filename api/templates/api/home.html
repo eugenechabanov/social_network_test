@@ -15,7 +15,11 @@
                 <p class="article-content">{{ post.content }}</p>
                 <img src="{% static 'images/thumb-up.svg' %}" style="width: 20px" alt="Likes:">
                 {{ post.number_of_likes }}
-                <small style="padding-left: 30px">Author: <a class="mr-2" href="#">{{ post.author }}</a></small>
+                <small style="padding-left: 30px">
+                    <div class="circular--landscape">
+                        <img src="{{ post.author.profile.image }}">
+                    </div>
+                    Author: <a class="mr-2" href="#">{{ post.author }}</a></small>
             </div>
         </article>
     {% endfor %}

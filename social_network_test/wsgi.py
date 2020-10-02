@@ -1,5 +1,5 @@
 """
-WSGI config for starnavi_social_network_test project.
+WSGI config for social_network_test project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'starnavi_social_network_test.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'social_network_test.settings')
 
 application = get_wsgi_application()
