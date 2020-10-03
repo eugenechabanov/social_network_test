@@ -1,0 +1,773 @@
+{
+	"info": {
+		"_postman_id": "f45aca5f-94de-4ca7-a8c5-1e8388378f92",
+		"name": "Auth and API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "01. Get Token /api/token",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "f1d61520-00be-4a33-906f-e871e6b08b82",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "username",
+							"value": "test",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "6AJxkScJ4lnT",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/token",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"token"
+					]
+				},
+				"description": "Get Token"
+			},
+			"response": []
+		},
+		{
+			"name": "02. Refresh Token /api/token/refresh",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "refresh",
+							"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTYwMTc1MzMzMywianRpIjoiYTY1YzJhZDE4ODFmNGQyMWJiZDkyY2JjM2VlNWZiNDgiLCJ1c2VyX2lkIjo4M30.-mKsyWUvuDtTaKfLhZeM9g2uJ8AMViZthfli_EH59qI",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/token/refresh",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"token",
+						"refresh"
+					]
+				},
+				"description": "Get Token"
+			},
+			"response": []
+		},
+		{
+			"name": "03. List all posts /api/list_all",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "2d081cd1-3e89-4e10-b5c2-1b7907da1549",
+						"exec": [
+							"var template = `\r",
+							"    <table bgcolor=\"#FFFFFF\" width=1000>\r",
+							"        <tr>\r",
+							"            <th>Author</th>\r",
+							"            <th>Image</th>\r",
+							"            <th>Content</th>\r",
+							"            <th>date_posted</th>\r",
+							"            <th>Likes</th>\r",
+							"        </tr>\r",
+							"\r",
+							"        {{#each response}}\r",
+							"            <tr>\r",
+							"                <td>{{author}}</td>\r",
+							"                <td><img src=\"{{image}}\" width=100></td>\r",
+							"                <td>{{content}}</td>\r",
+							"                <td>{{date_posted}}</td>\r",
+							"                <td>{{number_of_likes}}</td>\r",
+							"            </tr>\r",
+							"        {{/each}}\r",
+							"    </table>\r",
+							"`;\r",
+							"// Set visualizer\r",
+							"pm.visualizer.set(template, {\r",
+							"    // Pass the response body parsed as JSON as `data`\r",
+							"    response: pm.response.json()\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/list_all",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"list_all"
+					]
+				},
+				"description": "List all posts http://127.0.0.1:8000/api/list_all"
+			},
+			"response": []
+		},
+		{
+			"name": "04. Create post /api/create_post",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"content\": \"How to hire an IT Professional without watching their video showcase?\",\r\n    \"author\": \"WilliamMcgee\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/create_post",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"create_post"
+					]
+				},
+				"description": "Create a post http://127.0.0.1:8000/api/create_post"
+			},
+			"response": []
+		},
+		{
+			"name": "05. Delete post /api/delete/<int:id>",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"content\": \"2211Talent she for lively eat led sister. Entrance strongly packages she out rendered get quitting denoting led. Dwelling confined improved it he no doubtful raptures. Several carried through an of up attempt gravity. Situation to be at offending elsewhere distrusts if. Particular use for considered projection cultivated. Worth of do doubt shall it their. Extensive existence up me contained he pronounce do. Excellence inquietude assistance precaution any impression man sufficient.\",\r\n    \"author\": 2\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/delete/363",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"delete",
+						"363"
+					]
+				},
+				"description": "Delete a post http://127.0.0.1:8000/api/delete/18"
+			},
+			"response": []
+		},
+		{
+			"name": "06. Like post /api/like/<int:id>",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"author\": \"WilliamMcgee\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/like/355",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"like",
+						"355"
+					]
+				},
+				"description": "Like post http://127.0.0.1:8000/api/like/19"
+			},
+			"response": []
+		},
+		{
+			"name": "07. Unlike post /api/unlike/<int:id>",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"content-type": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"author\": \"WilliamMcgee\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/unlike/355",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"unlike",
+						"355"
+					]
+				},
+				"description": "Unlike post http://127.0.0.1:8000/api/unlike/19"
+			},
+			"response": []
+		},
+		{
+			"name": "08. User register /user/register",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"user-agent": true,
+					"accept": true,
+					"accept-encoding": true,
+					"connection": true,
+					"content-type": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"username\": \"11qq22ww\",\r\n    \"password\": \"xx\"\r\n}",
+					"options": {
+						"raw": {
+							"language": "text"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/user/register",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"user",
+						"register"
+					]
+				},
+				"description": "User register http://127.0.0.1:8000/user/register"
+			},
+			"response": []
+		},
+		{
+			"name": "09. Filter Posts by Date /api/analytics?date_from=2020-08-02&date_to=2020-08-20",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "f88de926-99e3-4da8-b60e-80e6b1630199",
+						"exec": [
+							"var template = `\r",
+							"    <table bgcolor=\"#FFFFFF\" width=1000>\r",
+							"        <tr>\r",
+							"            <th>Author</th>\r",
+							"            <th>Image</th>\r",
+							"            <th>Content</th>\r",
+							"            <th>date_posted</th>\r",
+							"            <th>Likes</th>\r",
+							"        </tr>\r",
+							"\r",
+							"        {{#each response}}\r",
+							"            <tr>\r",
+							"                <td>{{author}}</td>\r",
+							"                <td><img src=\"{{image}}\" width=100></td>\r",
+							"                <td>{{content}}</td>\r",
+							"                <td>{{date_posted}}</td>\r",
+							"                <td>{{number_of_likes}}</td>\r",
+							"            </tr>\r",
+							"        {{/each}}\r",
+							"    </table>\r",
+							"`;\r",
+							"// Set visualizer\r",
+							"pm.visualizer.set(template, {\r",
+							"    // Pass the response body parsed as JSON as `data`\r",
+							"    response: pm.response.json()\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/filter_posts_by_date?date_from=2020-08-02&date_to=2020-08-15",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"filter_posts_by_date"
+					],
+					"query": [
+						{
+							"key": "date_from",
+							"value": "2020-08-02"
+						},
+						{
+							"key": "date_to",
+							"value": "2020-08-15"
+						}
+					]
+				},
+				"description": "http://127.0.0.1:8000/api/analytics?date_from=2020-08-02&date_to=2020-08-20"
+			},
+			"response": []
+		},
+		{
+			"name": "10. Likes filtered by date /api/likes_filtered_by_date?date_from=2020-08-02&date_to=2020-09-30",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "919a3a9f-ba6b-4368-92bb-a25de1355918",
+						"exec": [
+							"var template = `\r",
+							"    <table bgcolor=\"#FFFFFF\" width=1000>\r",
+							"        <tr>\r",
+							"            <th>id</th>\r",
+							"            <th>value</th>\r",
+							"            <th>date</th>\r",
+							"            <th>user</th>\r",
+							"            <th>post</th>\r",
+							"        </tr>\r",
+							"\r",
+							"        {{#each response}}\r",
+							"            <tr>\r",
+							"                <td>{{id}}</td>\r",
+							"                <td>{{value}}</td>\r",
+							"                <td>{{date}}</td>\r",
+							"                <td>{{user}}</td>\r",
+							"                <td>{{post}}</td>\r",
+							"            </tr>\r",
+							"        {{/each}}\r",
+							"    </table>\r",
+							"`;\r",
+							"// Set visualizer\r",
+							"pm.visualizer.set(template, {\r",
+							"    // Pass the response body parsed as JSON as `data`\r",
+							"    response: pm.response.json()\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/likes_filtered_by_date?date_from=2020-08-02&date_to=2020-10-01",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"likes_filtered_by_date"
+					],
+					"query": [
+						{
+							"key": "date_from",
+							"value": "2020-08-02"
+						},
+						{
+							"key": "date_to",
+							"value": "2020-10-01"
+						}
+					]
+				},
+				"description": "http://127.0.0.1:8000/api/likes_filtered_by_date?date_from=2020-08-02&date_to=2020-09-30"
+			},
+			"response": []
+		},
+		{
+			"name": "11. Likes aggregated by date /api/likes_filtered_by_date?date_from=2020-08-02&date_to=2020-09-30",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "b710c91b-301a-47cb-836c-61a1e73748ad",
+						"exec": [
+							"var template = `\r",
+							"    <table bgcolor=\"#FFFFFF\" width=1000>\r",
+							"        <tr>\r",
+							"            <th>id</th>\r",
+							"            <th>value</th>\r",
+							"            <th>date</th>\r",
+							"            <th>user</th>\r",
+							"            <th>post</th>\r",
+							"        </tr>\r",
+							"\r",
+							"        {{#each response}}\r",
+							"            <tr>\r",
+							"                <td>{{id}}</td>\r",
+							"                <td>{{value}}</td>\r",
+							"                <td>{{date}}</td>\r",
+							"                <td>{{user}}</td>\r",
+							"                <td>{{post}}</td>\r",
+							"            </tr>\r",
+							"        {{/each}}\r",
+							"    </table>\r",
+							"`;\r",
+							"// Set visualizer\r",
+							"pm.visualizer.set(template, {\r",
+							"    // Pass the response body parsed as JSON as `data`\r",
+							"    response: pm.response.json()\r",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/likes_aggregated_by_days?date_from=2020-08-02&date_to=2020-10-02",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"likes_aggregated_by_days"
+					],
+					"query": [
+						{
+							"key": "date_from",
+							"value": "2020-08-02"
+						},
+						{
+							"key": "date_to",
+							"value": "2020-10-02"
+						}
+					]
+				},
+				"description": "http://127.0.0.1:8000/api/likes_filtered_by_date?date_from=2020-08-02&date_to=2020-09-30"
+			},
+			"response": []
+		},
+		{
+			"name": "12. User stats api/user_stats",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "35ff68ac-5248-490a-b13a-bfbd54843f05",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"auth": {
+					"type": "bearer",
+					"bearer": [
+						{
+							"key": "token",
+							"value": "{{access_token}}",
+							"type": "string"
+						}
+					]
+				},
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "http://127.0.0.1:8000/api/user_stats",
+					"protocol": "http",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "8000",
+					"path": [
+						"api",
+						"user_stats"
+					]
+				},
+				"description": "http://127.0.0.1:8000/api/user_stats"
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
