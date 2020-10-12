@@ -1,5 +1,5 @@
 from django.http import HttpResponse
-from .serializers import PostSerializer, UserSerializer, LikeSerializer, LikeAggrSerializer, UserStatsSerializer, LogEntrySerializer
+from .serializers import PostSerializer, UserSerializer, LikeSerializer, LikeAggrSerializer, UserStatsSerializer
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.views import APIView
@@ -10,14 +10,13 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from .models import Post, Like, Profile
 from django.contrib.auth.models import User
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import  AllowAny
 import random
 import datetime
 from django.db.models import Count
 from django.contrib.admin.models import LogEntry
 from django.db.models import Max
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt import serializers
 from api.serializers import CustomTokenObtainPairSerializer
 
 
@@ -105,7 +104,7 @@ class LikePostAPIView(APIView):
 
 class UnlikePostAPIView(APIView):
     def unlike(self, request, postid):
-        print('unlike')
+        pass
 
 
 class DeletePostAPIView(APIView):
@@ -166,8 +165,7 @@ class LikesAggregatedByDaysAPIView(APIView):
         date_from, date_to, error = get_dates_from_request(request)
         if error != '':
             return error
-        # likes = Like.objects.filter(date__gte=date_from, date__lte=date_to)
-        # total_count = likes.count()
+
         likes = Like.objects.extra(select={'day': 'date( date )'}).values('day') \
             .annotate(liked_posts=Count('date'))
 
@@ -187,7 +185,6 @@ class FilterPostsByDateAPIView(APIView):
 
         serializer = PostSerializer(posts, many=True)
         return Response(serializer.data)
-    # context_object_name = 'posts'
 
 
 class UserStatsAPIView(APIView):
@@ -197,37 +194,6 @@ class UserStatsAPIView(APIView):
     def get(self, request):
         users = User.objects.all()
         serializer = UserStatsSerializer(users, many=True)
-        return Response(serializer.data)
-
-
-
-
-
-        # getting ids of all existing users:
-        all_user_ids_list = [item['id'] for item in list(User.objects.values('id'))]
-
-        # serializer = UserStatsSerializer(users, many=True)
-
-        # Generates a "SELECT MAX..." query
-
-        user_last = LogEntry.objects.latest('action_time')  # {'rating__max': 5}
-        user_last = LogEntry.objects.aggregate(Max('action_time'))  # {'rating__max': 5}
-        # user_last = LogEntry.objects.filter(action_time=)
-        # user_last = LogEntry.objects.values('user').annotate(dcount=Count('action_time'))
-        # user_last = LogEntry.objects.all().order_by('user', 'action_time').distinct('user')
-        # user_last = LogEntry.objects.filter().values_list('user', flat=True).distinct()
-        # user_last = LogEntry.objects.values('user_id').annotate(latest_date=Max('action_time'))
-        # print(user_last)
-        user_last = LogEntry.objects.raw("""    
-            SELECT id, user_id, MAX(action_time) AS max_items
-            FROM django_admin_log
-            GROUP BY user_id;
-        """)
-
-        # print(user_last)
-        # LogEntry.objects.filter(action_time=)
-        serializer = CustomTokenObtainPairSerializer(user_last, many=True)
-
         return Response(serializer.data)
 
 

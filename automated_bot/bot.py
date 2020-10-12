@@ -12,11 +12,6 @@ like_post = '/api/like/'
 list_all = '/api/list_all'
 user_register = '/user/register'
 
-# actions
-# sign-up users
-# each user creates random number of posts
-# likes random number of posts (multi-like allowed)
-
 
 class Bot:
     """Bot that reads data from config, creates random number of random users, posts, likes"""
@@ -56,8 +51,6 @@ class Bot:
                 self.like_post(user_name)
             print('[{}/{}] User {} liked {} posts.'.format(i + 1, len(self.credentials_dict),
                                                              user_name, random_number_of_likes))
-        # self.list_posts()
-        # self.create_user(random_full_name)
         print('Done.')
 
     def create_user(self, user_name):
@@ -109,7 +102,6 @@ class Bot:
         if str(response.status_code) == "200":
             print('--> User {} liked random post "{}..." by {}.'.format(user, json_data['content'][:30],
                                                                             json_data['author']))
-        # 'http://127.0.0.1:8000/api/like/89'
 
     def list_posts(self):
         headers = {'Authorization': 'Bearer {}'.format(self.access_token)}

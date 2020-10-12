@@ -12,7 +12,6 @@ class PostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Post
         fields = ['id', 'content', 'author', 'image', 'date_posted', 'number_of_likes']
-        # fields = '__all__'
 
 
 class UserSerializer(serializers.ModelSerializer):

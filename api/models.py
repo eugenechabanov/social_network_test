@@ -55,9 +55,6 @@ class Like(models.Model):
     def __str__(self):
         return str(self.user) + ':' + str(self.post) + ':' + str(self.value)
 
-    # class Meta:
-    #     unique_together = ("user", "post", "value")
-
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
@@ -76,7 +73,7 @@ def get_portrait_image():
     headers = {        # very bad practice!!! don't you ever do this:
         'Authorization': 'Bearer v2/YWUyMmUtNzM3OWYtNzQ0NmMtMDI3ZDQtOTRlZDktZDdlZWYvMTE1NTE5NjczL2N1c3RvbWVyLzMvMnk3bXBlV3QxRm5qVXhCS0VwV25GRUF2dVpoSlNFSHJmOHJlejRUQ2UzenpyVDZ1ek15eUtQSnVpSUZKRzZNVGM2dWdkY2VKMjVVLWVrYVRfZmRkYzl5bDZVRXFPQWxtYjlXLTl2WC04bjR6dWVWak13a3NuSXVnaGtjcVNWVmhvZHZhdmlDRVo1Rk5VWVNvTjdwZ3VrTDNRU01BR2E5b3FRMElucTgwcmdGZ19CNEJfWHpjOVo4R0lBanhXRlJFMDhqbFR6ejJvcEQ3T3BoQzlxN0Fxdw'
     }
-    query = 'man+closeup' if randrange(0, 1) else 'woman+closeup'
+    query = 'man+closeup' if randrange(0, 1) else 'woman+closeup'           # getting images of men and women
     url = 'https://api.shutterstock.com/v2/images/search?query={}'.format(query)
     r = requests.get(url, headers=headers, timeout=20)
     image_url = r.json()['data'][randrange(0, 20)]['assets']['large_thumb']['url']
